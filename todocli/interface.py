@@ -153,7 +153,7 @@ class Tod0GUI:
                     Window(width=5),
                     Window(
                         FormattedTextControl(
-                            f"Created: {t.created_datetime}\nReminder: {t.reminder_datetime}"
+                            f"Reminder: {t.reminder_datetime}"
                         ),
                         width=30,
                     ),
