@@ -80,6 +80,8 @@ class Tod0GUI:
             full_screen=False,
         )
 
+        self.application.input.console_input_reader.recognize_paste = False
+
         self.application.run()
 
     def create_layout(self):
