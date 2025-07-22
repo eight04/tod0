@@ -24,6 +24,32 @@ from prompt_toolkit.widgets import TextArea, Checkbox, Button
 from todocli.graphapi import wrapper, oauth
 from todocli.utils import update_checker
 
+class TaskUI(VSplit):
+    def __init__(self, task):
+        self.task = task
+        self.title = FormattedTextControl("", focusable=True)
+        self.marked = False
+        super().__init__(
+            [
+                Window(self.title, wrap_lines=True, height=2),
+                Window(width=5),
+                Window(
+                    FormattedTextControl(
+                        f"Reminder: {task.reminder_datetime or task.due_datetime}"
+                    ),
+                    width=30,
+                ),
+            ],
+        )
+
+        self.mark(False)
+
+    def mark(self, value=None):
+        if value is not None:
+            self.marked = value
+        else:
+            self.marked = not self.marked
+        self.title.text = f"{'*' if self.marked else ' '}{self.task.title}"
 
 class Tod0GUI:
     """
@@ -150,19 +176,7 @@ class Tod0GUI:
 
         self.tasks_ui.clear()
         for idx, t in enumerate(self.tasks):
-            _task_ui = VSplit(
-                [
-                    Window(FormattedTextControl(t.title, focusable=True), wrap_lines=True, height=2),
-                    Window(width=5),
-                    Window(
-                        FormattedTextControl(
-                            f"Reminder: {t.reminder_datetime or t.due_datetime}"
-                        ),
-                        width=30,
-                    ),
-                ],
-            )
-            self.tasks_ui.append(_task_ui)
+            self.tasks_ui.append(TaskUI(t))
 
         # Add empty container if task list is empty
         if not self.tasks_ui:
@@ -330,10 +344,20 @@ class Tod0GUI:
                 if user_input == "y":
                     # Mark task as complete
                     with yaspin(text="Marking as complete") as sp:
-                        wrapper.complete_task(
-                            list_id=self.lists[self.list_focus_idx].id,
-                            task_id=self.tasks[self.task_focus_idx].id,
-                        )
+                        # find marked tasks
+                        marked_tasks = [
+                            t for t in self.tasks_ui if t.marked
+                            ]
+                        if not marked_tasks:
+                            wrapper.complete_task(
+                                list_id=self.lists[self.list_focus_idx].id,
+                                task_id=self.tasks[self.task_focus_idx].id,
+                            )
+                        else:
+                            wrapper.complete_tasks(
+                                list_id=self.lists[self.list_focus_idx].id,
+                                task_ids=[task_ui.task.id for task_ui in marked_tasks],
+                                )
 
                     self.load_tasks()
                     # self.refresh_layout()
@@ -385,6 +409,21 @@ class Tod0GUI:
                     self.load_tasks()
 
                 self.prompt("New task: ", "Reminder (optional): ", callback=create_task)
+
+        @kb.add("t")
+        def _(event):
+            """
+            Toggle marker
+            """
+            # Only receive input on task view mode
+            if self.is_focus_on_list or (
+                not self.is_focus_on_list and not self.tasks_ui
+            ):
+                return
+
+            # Toggle marker of currently focused task
+            self.tasks_ui[self.task_focus_idx].mark()
+            # self.application.layout.focus(self.tasks_ui[self.task_focus_idx].children[0].content)
 
         @kb_escape.add("escape", eager=True)
         def _(event):
