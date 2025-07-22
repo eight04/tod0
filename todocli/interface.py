@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from todocli.utils.datetime_util import parse_datetime
 from yaspin import yaspin
 
@@ -29,14 +30,21 @@ class TaskUI(VSplit):
         self.task = task
         self.title = FormattedTextControl("", focusable=True)
         self.marked = False
+
+        reminder = task.reminder_datetime or task.due_datetime
+        if reminder:
+            reminder_text = [
+                ("#ff0000" if reminder < datetime.now(timezone.utc) else "", f"Reminder: {reminder.strftime('%Y-%m-%d %H:%M')}"),
+                ]
+        else:
+            reminder_text = [("", "Reminder: None")]
+
         super().__init__(
             [
                 Window(self.title, wrap_lines=True, height=2),
                 Window(width=5),
                 Window(
-                    FormattedTextControl(
-                        f"Reminder: {task.reminder_datetime or task.due_datetime}"
-                    ),
+                    FormattedTextControl(reminder_text),
                     width=30,
                 ),
             ],
