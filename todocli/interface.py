@@ -155,7 +155,7 @@ class Tod0GUI:
                     Window(width=5),
                     Window(
                         FormattedTextControl(
-                            f"Reminder: {t.reminder_datetime}"
+                            f"Reminder: {t.reminder_datetime or t.due_datetime}"
                         ),
                         width=30,
                     ),
