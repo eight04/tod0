@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from todocli.utils.datetime_util import parse_datetime
 from yaspin import yaspin
 
@@ -27,6 +27,12 @@ from todocli.utils import update_checker
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
 
+REMINDER_COLOR = [
+    ("#ff0000", timedelta(days=0)),
+    ("#ffa500", timedelta(days=1)),
+    ("#ffff00", timedelta(days=7)),
+    ]
+
 
 class TaskUI(VSplit):
     def __init__(self, task):
@@ -35,17 +41,20 @@ class TaskUI(VSplit):
         self.marked = False
 
         reminder_text = [
-            ("", f"Created: {task.created_datetime.strftime(DATETIME_FORMAT)}"),
+            # ("", "Created:  "),
+            # ("", task.created_datetime.strftime(DATETIME_FORMAT) + "\n"),
         ]
 
         reminder = task.reminder_datetime or task.due_datetime
         if reminder:
-            color = (
-                "#ff0000" if reminder and reminder < datetime.now(timezone.utc) else ""
-            )
+            for color, delta in REMINDER_COLOR:
+                if reminder - datetime.now(timezone.utc) < delta:
+                    break
+            else:
+                color = ""
             reminder_text.extend(
                 [
-                    ("", f"\nReminder: "),
+                    ("", f"Reminder: "),
                     (color, reminder.strftime(DATETIME_FORMAT)),
                 ]
             )
