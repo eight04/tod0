@@ -230,8 +230,14 @@ class Tod0GUI:
         self.application.layout.focus(self.prompt_window)
         Tod0GUI.is_waiting_prompt = False
 
-    def prompt(self, *messages, callback=None):
+    def prompt(self, *messages, callback=None, default=None):
         messages_list = [*messages]
+        if default is None:
+            default = [""] * len(messages)
+        elif isinstance(default, str):
+            default = [default] * len(messages)
+        else:
+            default = list(default)
 
         if not callable(callback):
             raise ValueError("callback must be a function")
@@ -248,6 +254,7 @@ class Tod0GUI:
             input_field = TextArea(
                 height=1,
                 prompt=messages_list.pop(0),
+                text=default.pop(0),
                 style="class:input-field",
                 multiline=False,
                 wrap_lines=False,
@@ -406,6 +413,32 @@ class Tod0GUI:
 
             self.prompt_window = input_field
             event.app.layout.focus(input_field)
+
+        @kb.add("e")
+        def _(event):
+            """
+            Edit task
+            """
+            if self.is_focus_on_list:
+                return
+            selected_task = self.tasks[self.task_focus_idx]
+            def edit_task(name, reminder):
+                if not name or (name == selected_task.title and not reminder):
+                    return
+
+                # Edit task
+                with yaspin(text="Editing task") as sp:
+                    wrapper.edit_task(
+                        task_id=selected_task.id,
+                        list_id=self.lists[self.list_focus_idx].id,
+                        task_name=name,
+                        reminder_datetime=(
+                            None if not reminder else parse_datetime(reminder)
+                        ),
+                    )
+                # Refresh tasks
+                self.load_tasks()
+            self.prompt("Name: ", "Reminder (optional): ", callback=edit_task, default=[selected_task.title, ""])
 
         @kb.add("n")
         def _(event):

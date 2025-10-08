@@ -109,6 +109,22 @@ def create_task(
     response = session.post(endpoint, json=request_body)
     return True if response.ok else response.raise_for_status()
 
+def edit_task(
+    task_id: str,
+    list_id: str,
+    task_name: str = None,
+    reminder_datetime: datetime | None = None,
+    ):
+    endpoint = f"{BASE_URL}/{list_id}/tasks/{task_id}"
+    request_body = {}
+    if task_name is not None:
+        request_body["title"] = task_name
+    if reminder_datetime is not None:
+        request_body["reminderDateTime"] = datetime_to_api_timestamp(reminder_datetime)
+        request_body["isReminderOn"] = True
+    session = get_oauth_session()
+    response = session.patch(endpoint, json=request_body)
+    return True if response.ok else response.raise_for_status()
 
 def complete_task(
     list_name: str = None,
